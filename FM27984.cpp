@@ -1,19 +1,15 @@
-// parallax i2c fm  part 27984   C++ class
-//   bs2 and spin code available
-//    ? bs2 doesn't send out addr before rd/write, spin maybe does ??
-//      device has 2 I2C address, ending in 0, no addresses required  Ahhhh
-//  write configregs 5x2   read status 2x2
-//   have to enable tune to set channel   seekup 11  seekdown 01   00 no seek
+
 
 #include "FM27984.h"
 
-#include <Wire.h>
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
-const uint16_t FM27984::Config0[CONFIG_WORDS] = {0xD001, 0, 0x0400, 0x86D3, 0x4000};
-
+const uint16_t FM27984::Config0[CONFIG_REGS] = {0xD001, 0, 0x0400, 0x86D3};
 
 FM27984::FM27984() {
 	init(975,1,6);
@@ -23,24 +19,32 @@ FM27984::FM27984(int _chan, int _vol, int _sst) {
 	init(_chan,_vol,_sst);
 }
 
+FM27984::~FM27984() {
+	close(fd);
+}
+
 void FM27984::init(int _chan, int _vol, int _sst) {
+	fd = wiringPiI2CSetup(SLAVE_ID);
+	if (fd < 0) {
+		printf("Failed to open \n");
+	}
 	chan0 = _chan;
 	vol0 = _vol;
 	sst0 = _sst;
 }
 
 void FM27984::reset() {
- vol = vol0;
- chan = chan0;
- sst = sst0;
- memcpy(Config,Config0,CONFIG_WORDS * sizeof(uint16_t));
- Config[1] &= ~CHAN_MASK;
- Config[1] |= (chan - MIN_FREQ) << CHAN;
- Config[3] &= ~VOLUME_MASK;
- Config[3] |= vol  << VOLUME;   
- tune_enable();
- setConfig();
- tune_disable();
+	vol = vol0;
+	chan = chan0;
+	sst = sst0;
+	memcpy(Config,Config0,CONFIG_REGS * sizeof(uint16_t));
+	Config[1] &= ~CHAN_MASK;
+	Config[1] |= (chan - MIN_FREQ) << CHAN;
+	Config[3] &= ~VOLUME_MASK;
+	Config[3] |= vol  << VOLUME;   
+	tune_enable();
+	setConfig();
+	tune_disable();
 }
 
 void FM27984::tune_enable() {
@@ -116,26 +120,21 @@ bool FM27984::sst_update(int val) {
 
 void FM27984::setConfig()
 {
- int i;
+	int i;
 
- Wire.beginTransmission(SLAVE_ID);
- for(i=0; i< CONFIG_WORDS;i++) {
- 	Wire.write((int)Config[i]>>8);
- 	Wire.write((int)Config[i]);
- }
- Wire.endTransmission();
+	for(i=0; i< CONFIG_REGS;i++) {
+		wiringPiI2CWriteReg16(fd, CONFIG_REG_START + i, (int)Config[i]);
+	}
 }
 
 
 
 void FM27984::getStatus()
 {
- int i;
- Wire.requestFrom(SLAVE_ID, STATUS_WORDS*2);
- for(i=0; i< STATUS_WORDS;i++) {
- 	Status[i] = Wire.read();
- 	Status[i] = Status[i]<<8 | Wire.read();
- }
+	int i;
+	for(i=0; i< STATUS_REGS;i++) {
+		Status[i] = wiringPiI2CReadReg16(fd, STATUS_REG_START + i);
+	}
     seekchan = Status[0] & READCHAN_MASK;
     stc =  Status[0] >> STC  & 1;
     sf =  Status[0] >> SF & 1;
@@ -149,7 +148,7 @@ void FM27984::getStatus()
 //  these shouldn't really by in  class file
 
 void FM27984::printConfig() {
-        int config_chan;
+    int config_chan;
 	char str[128];
 	sprintf(str,"config %04x %04x %04x %04x",Config[0],Config[1],Config[2],Config[3]);
 	Serial.println(str);

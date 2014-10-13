@@ -1,58 +1,42 @@
-// parallax i2c fm  part 27984    C++ version
-//   bs2 and spin code available
-//      device has 2 I2C address, ending in 0, no addresses required  Ahhhh
-//  write configregs 5x2   read status 2x2
-//   have to enable tune to set channel   seekup 11  seekdown 01   00 no seek
-//  grnd pin 10  vcc pin 9
-
 #include "FM27984.h"
-#include <Wire.h>
-
-// SDA pin is Analog4   module pin 1
-// SCL pin is Analog5   module pin 2
+#include <iostream>
 
 
 #define MAX_PRESETS 10
+
 
 FM27984 fm(975,1,6);
 
 uint16_t  fm_presets[MAX_PRESETS] = {919,975}, fm_presetnext=2;
 bool seeking;
 
+using namespace std;
 
 void setup()
 {
- Serial.begin(9600);
- delay(5);
- Serial.println("FM Demo");
- Wire.begin();
+	cout << "FM Demo" << endl;
 
- fm.reset();
+	fm.reset();
 
- fm.printConfig();
- printPresets();
+	fm.printConfig();
+	printPresets();
 }
-
 
 void loop()
 {
 	uint8_t c;
 	bool update;
 
-	Serial.println("Freq +/-  Vol >/<  Seek u/d  Preset 0-9  AddPreset A  Reset R  SST x/y");
-	Serial.println("  Enter command character:");
-	while(!Serial.available()){
-		if (!fm.tune_done()) {
-			fm.getStatus();
-			if (fm.tune_done()) {
-				fm.printStatus();
-				seeking = false;
-			}
-			delay(20);
+	while (seeking) {
+		fm.getStatus();
+		if (fm.tune_done()) {
+			fm.printStatus();
+			seeking = false;
 		}
+		usleep(20);
 	}
-	c = Serial.read();
-	Serial.println((char)c);
+	cout << "Freq +/-  Vol >/<  Seek u/d  Preset 0-9  AddPreset A  Reset R  SST x/y" << endl << endl << ">> ";
+	cin >> c;
 	update = false;
 	switch(c) {
 		case '+':
@@ -105,7 +89,7 @@ void loop()
         case '?':
             fm.getStatus();
             fm.printConfig();
-			i2cdump(0x02,4); // config on module
+			//i2cdump(0x02,4); // config on module
             fm.printStatus();
             printPresets();
             break;
@@ -136,33 +120,33 @@ void printPresets() {
 	int chan,i;
         char str[128];
         
-        Serial.print("Presets: ");
+        cout << "Presets: ";
         for (i=0;i<fm_presetnext;i++) {
           chan = fm_presets[i];
           sprintf(str,"%d.%d ",chan/10,chan%10);
-          Serial.print(str);
+          cout << str;
         }
-        Serial.println();
+       	cout << endl;
 }
 
 #define SID (0x22 >> 1)
 void i2cdump(uint8_t addr, int n)
 {
- int i;
- uint16_t buff[8];
- char str[128];
+ // int i;
+ // uint16_t buff[8];
+ // char str[128];
 
- Serial.print(addr,HEX); Serial.println(" dump");
- Wire.beginTransmission(SID);
- Wire.write(addr);  // start addr
- Wire.endTransmission();
- Wire.requestFrom(SID, n*2);
- for(i=0; i< n;i++) {
-    buff[i] = Wire.read();
-    buff[i] = buff[i]<<8 | Wire.read();
-    sprintf(str,"%04x ",buff[i]);
-    Serial.print(str);
- }
- Serial.println();
+ // Serial.print(addr,HEX); Serial.println(" dump");
+ // Wire.beginTransmission(SID);
+ // Wire.write(addr);  // start addr
+ // Wire.endTransmission();
+ // Wire.requestFrom(SID, n*2);
+ // for(i=0; i< n;i++) {
+ //    buff[i] = Wire.read();
+ //    buff[i] = buff[i]<<8 | Wire.read();
+ //    sprintf(str,"%04x ",buff[i]);
+ //    Serial.print(str);
+ // }
+ // Serial.println();
 }
 

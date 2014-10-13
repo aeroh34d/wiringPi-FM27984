@@ -1,20 +1,13 @@
 #ifndef FM27984_h
 #define FM27984_h
 
-#if ARDUINO >= 100
-#include "Arduino.h"       // for delayMicroseconds, digitalPinToBitMask, etc
-#else
-#include "WProgram.h"      // for delayMicroseconds
-#include "pins_arduino.h"  // for digitalPinToBitMask, etc
-#endif
-
-
-
 // device ID 
 #define SLAVE_ID   0x20 >> 1
 
-#define CONFIG_WORDS 5
-#define STATUS_WORDS 4
+#define CONFIG_REGS 4
+#define CONFIG_REG_START 0x02
+#define STATUS_REGS 2
+#define STATUS_REG_START 0x0A
 
 // config 0 register 02
 #define DHIZ 15
@@ -88,6 +81,7 @@ class FM27984
   public:
   	FM27984();
   	FM27984(int _chan, int _vol, int _sst);
+  	~FM27984();
 	void reset();
 	void tune_enable();
 	void tune_disable();
@@ -107,12 +101,13 @@ class FM27984
 
   private:
 	void init(int _chan, int _vol, int _sst);
-	static const uint16_t Config0[CONFIG_WORDS];
-	uint16_t Config[CONFIG_WORDS], Status[STATUS_WORDS];
+	static const uint16_t Config0[CONFIG_REGS];
+	uint16_t Config[CONFIG_REGS], Status[STATUS_REGS];
 	uint16_t vol, chan ;   // channel spacing 100KHz
 	uint16_t rss, readchan,sst,st,fmtrue,fmready,stc,sf;
 	uint16_t seekchan;
 	uint16_t chan0, vol0, sst0;   // reset values
+	int fd;
 };
 
 #endif
