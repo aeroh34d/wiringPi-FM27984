@@ -1,6 +1,6 @@
 wiringPi library for Parallax FM module (part 27984)   i2c
 
-wiringPi (http://wiringpi.org) is a great open-source library for low-level interactions on the Raspberry Pi (http://www.raspberrypi.org).
+wiringPi (http://wiringpi.com) is a great open-source library for low-level interactions on the Raspberry Pi (http://www.raspberrypi.org).
 
 The datasheet for the FM module can be found here:
   http://www.parallax.com/sites/default/files/downloads/27984-FM-Radio-Receiver-v1.0.pdf
