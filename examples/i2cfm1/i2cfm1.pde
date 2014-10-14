@@ -8,9 +8,28 @@
 FM27984 fm(975,1,6);
 
 uint16_t  fm_presets[MAX_PRESETS] = {919,975}, fm_presetnext=2;
-bool seeking;
+bool seeking = false;
 
 using namespace std;
+
+void printPresets() {
+	int chan,i;
+        char str[128];
+        
+        cout << "Presets: ";
+        for (i=0;i<fm_presetnext;i++) {
+          chan = fm_presets[i];
+          sprintf(str,"%d.%d ",chan/10,chan%10);
+          cout << str;
+        }
+       	cout << endl;
+}
+
+void add_preset() {
+    if (fm_presetnext >= MAX_PRESETS) return;
+    fm_presets[fm_presetnext++] = fm.chan_get();
+    printPresets();
+}
 
 void setup()
 {
@@ -19,23 +38,23 @@ void setup()
 	fm.reset();
 
 	fm.printConfig();
+	fm.printStatus();
 	printPresets();
 }
 
-void loop()
+bool loop()
 {
 	uint8_t c;
 	bool update;
-
 	while (seeking) {
 		fm.getStatus();
-		if (fm.tune_done()) {
+		if (fm.tune_done() || fm.tune_fail()) {
 			fm.printStatus();
 			seeking = false;
 		}
 		usleep(20);
 	}
-	cout << "Freq +/-  Vol >/<  Seek u/d  Preset 0-9  AddPreset A  Reset R  SST x/y" << endl << endl << ">> ";
+	cout << "Freq +/-  Vol >/<  Seek u/d  Preset 0-9  AddPreset A  Reset R  SST x/y  Quit q" << endl << endl << ">> ";
 	cin >> c;
 	update = false;
 	switch(c) {
@@ -93,6 +112,8 @@ void loop()
             fm.printStatus();
             printPresets();
             break;
+        case 'q':
+            return false;
 
 		default:
 			break;
@@ -107,26 +128,17 @@ void loop()
 		}
 		fm.tune_disable();
 	}
+	return true;
 }
 
-void add_preset() {
-    if (fm_presetnext >= MAX_PRESETS) return;
-    fm_presets[fm_presetnext++] = fm.chan_get();
-    printPresets();
-}
-
-
-void printPresets() {
-	int chan,i;
-        char str[128];
-        
-        cout << "Presets: ";
-        for (i=0;i<fm_presetnext;i++) {
-          chan = fm_presets[i];
-          sprintf(str,"%d.%d ",chan/10,chan%10);
-          cout << str;
-        }
-       	cout << endl;
+int main(int argc, char const *argv[])
+{
+	bool cont = true;
+	setup();
+	while (cont) {
+		cont = loop();
+	}
+	return 0;
 }
 
 #define SID (0x22 >> 1)
@@ -149,4 +161,5 @@ void i2cdump(uint8_t addr, int n)
  // }
  // Serial.println();
 }
+
 

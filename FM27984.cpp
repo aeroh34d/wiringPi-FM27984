@@ -1,13 +1,7 @@
-
-
 #include "FM27984.h"
 
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 
 const uint16_t FM27984::Config0[CONFIG_REGS] = {0xD001, 0, 0x0400, 0x86D3};
 
@@ -59,6 +53,17 @@ bool FM27984::tune_done() {
 	// see if seek/tune is complete  assumes getStatus() called recently
     if (stc && !(Config[0] & SEEK_MASK)) return true;
 	if (stc) {
+		seek_off();
+		chan = seekchan + MIN_FREQ;
+		setConfig();
+		return true;
+	}
+	return false;
+}
+
+bool FM27984::tune_fail() {
+	if (sf && !(Config[0] & SEEK_MASK)) return true;
+	if (sf) {
 		seek_off();
 		chan = seekchan + MIN_FREQ;
 		setConfig();
@@ -151,20 +156,21 @@ void FM27984::printConfig() {
     int config_chan;
 	char str[128];
 	sprintf(str,"config %04x %04x %04x %04x",Config[0],Config[1],Config[2],Config[3]);
-	Serial.println(str);
+	printf("%s\n", str);
 	config_chan = ((Config[1] & CHAN_MASK) >> CHAN ) + MIN_FREQ;
 	sprintf(str," fm channel %d.%d  volume %d  ss %d  sst %d   %d.%d",
           chan/10,chan%10,vol,rss,sst,config_chan/10,config_chan%10);
-	Serial.println(str);
+	printf("%s\n", str);
 }
 
 void FM27984::printStatus() {
 	int chan;
 	char str[128];
 	sprintf(str,"status %04x %04x",Status[0],Status[1]);
-	Serial.println(str);
+	printf("%s\n", str);
 	chan = seekchan + MIN_FREQ;
 	sprintf(str," seek channel %d.%d  ss %d complete %d fail %d %d %d",
 		chan/10,chan%10,rss,stc,sf,fmtrue,fmready);
-	Serial.println(str);
+	printf("%s\n", str);
 }
+

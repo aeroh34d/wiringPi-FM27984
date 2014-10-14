@@ -1,8 +1,13 @@
 #ifndef FM27984_h
 #define FM27984_h
 
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
 // device ID 
-#define SLAVE_ID   0x20 >> 1
+#define SLAVE_ID   0x11
 
 #define CONFIG_REGS 4
 #define CONFIG_REG_START 0x02
@@ -86,6 +91,7 @@ class FM27984
 	void tune_enable();
 	void tune_disable();
 	bool tune_done();
+	bool tune_fail();
 	void seek_off();
 	void seek_up();
 	void seek_down();
